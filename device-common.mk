@@ -65,6 +65,8 @@ $(call inherit-product, $(LOCAL_PATH)/utils.mk)
 # Installs gsi keys into ramdisk, to boot a GSI with verified boot.
 $(call inherit-product, $(SRC_TARGET_DIR)/product/gsi_keys.mk)
 
+# Installs gsi keys into ramdisk, to boot a developer GSI with verified boot.
+$(call inherit-product, $(SRC_TARGET_DIR)/product/developer_gsi_keys.mk)
 
 PRODUCT_CHARACTERISTICS := nosdcard
 PRODUCT_SHIPPING_API_LEVEL := 28
@@ -393,6 +395,7 @@ PRODUCT_PACKAGES += \
     android.hardware.camera.provider@2.4-impl-google \
     android.hardware.camera.provider@2.4-service-google \
     camera.lito \
+    lib_multicam_dualfov_capture_session \
     libgooglecamerahwl_impl \
     libqomx_core \
     libmmjpeg_interface \
