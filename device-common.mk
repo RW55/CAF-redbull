@@ -221,6 +221,9 @@ PRODUCT_PROPERTY_OVERRIDES += \
     vendor.audio.feature.usb_offload.enable=true \
     vendor.audio.feature.audiozoom.enable=true \
     vendor.audio.feature.snd_mon.enable=true \
+    vendor.audio.capture.enforce_legacy_copp_sr=true \
+    vendor.audio.offload.buffer.size.kb=256 \
+    persist.vendor.audio_hal.dsp_bit_width_enforce_mode=24 \
 
 # MaxxAudio effect and add rotation monitor
 PRODUCT_PROPERTY_OVERRIDES += \
@@ -268,7 +271,7 @@ PRODUCT_PROPERTY_OVERRIDES += \
 
 # camera hal buffer management
 PRODUCT_PROPERTY_OVERRIDES += \
-    persist.camera.managebuffer.enable=0
+    persist.camera.managebuffer.enable=1
 
 # Lets the vendor library that Google Camera HWL is enabled
 PRODUCT_PROPERTY_OVERRIDES += \
@@ -768,10 +771,6 @@ PRODUCT_COPY_FILES += \
 # powerstats HAL
 PRODUCT_PACKAGES += \
     android.hardware.power.stats@1.0-service.pixel
-
-# Do not skip init trigger by default
-PRODUCT_DEFAULT_PROPERTY_OVERRIDES += \
-    vendor.skip.init=0
 
 QTI_TELEPHONY_UTILS := qti-telephony-utils
 QTI_TELEPHONY_UTILS += qti_telephony_utils.xml

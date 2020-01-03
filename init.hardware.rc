@@ -40,10 +40,6 @@ on early-init && property:ro.revision="DEV1.0"
 on early-init && property:ro.boot.mode=charger
     setprop vendor.skip.init 1
 
-# We need vold early for metadata encryption
-on early-fs
-    start vold
-
 on init && property:vendor.skip.init=0
     # Boot time fs tuning
     write /sys/block/sda/queue/iostats 0
@@ -78,10 +74,6 @@ on init && property:vendor.skip.init=0
 
     start vendor.citadeld
     start vendor.keymaster-4-0-citadel
-
-    # Support legacy paths
-    symlink /sdcard /mnt/sdcard
-    symlink /sdcard /storage/sdcard0
 
     # Loading kernel modules in background
     start insmod_sh
