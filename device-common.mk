@@ -307,6 +307,7 @@ PRODUCT_PROPERTY_OVERRIDES += \
     vendor.rild.libpath=/vendor/lib64/libril-qc-hal-qmi.so \
     ro.hardware.keystore_desede=true \
     persist.vendor.radio.procedure_bytes=SKIP \
+    persist.vendor.radio.hidl_dev_service=true \
 
 # Disable snapshot timer
 PRODUCT_PROPERTY_OVERRIDES += \
@@ -735,11 +736,6 @@ PRODUCT_COPY_FILES += \
 # power HAL
 PRODUCT_PACKAGES += \
     android.hardware.power@1.3-service.pixel-libperfmgr
-
-# Disable ro.adb.secure for the factory build to work around dead touchscreens
-# Bug: 116250643
-PRODUCT_PRODUCT_PROPERTIES += \
-    ro.adb.secure=0
 
 # GPS configuration file
 PRODUCT_COPY_FILES += \
