@@ -152,6 +152,11 @@ AB_OTA_POSTINSTALL_CONFIG += \
 PRODUCT_PACKAGES += \
     checkpoint_gc
 
+# Enable wider inodes for project quotas
+# Later, replace with $(call inherit-product, $(SRC_TARGET_DIR)/product/emulated_storage.mk)
+PRODUCT_QUOTA_PROJID := 1
+PRODUCT_PRODUCT_PROPERTIES += ro.emulated_storage.projid=1
+
 # The following modules are included in debuggable builds only.
 PRODUCT_PACKAGES_DEBUG += \
     bootctl \
@@ -391,8 +396,8 @@ PRODUCT_PACKAGES += \
     vendor.qti.media.c2@1.0-service \
 
 PRODUCT_PACKAGES += \
-    android.hardware.camera.provider@2.4-impl-google \
-    android.hardware.camera.provider@2.4-service-google \
+    android.hardware.camera.provider@2.6-impl-google \
+    android.hardware.camera.provider@2.6-service-google \
     camera.lito \
     lib_multicam_dualfov_capture_session \
     libgooglecamerahwl_impl \
