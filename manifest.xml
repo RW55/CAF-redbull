@@ -154,6 +154,15 @@ IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
         </interface>
     </hal>
     <hal format="hidl">
+      <name>vendor.google.wireless_charger</name>
+      <transport>hwbinder</transport>
+      <version>1.2</version>
+      <interface>
+        <name>IWirelessCharger</name>
+        <instance>default</instance>
+      </interface>
+    </hal>
+    <hal format="hidl">
         <name>android.hardware.configstore</name>
         <transport>hwbinder</transport>
         <impl level="generic"></impl>
@@ -283,7 +292,7 @@ IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
         <name>vendor.qti.imsrtpservice</name>
         <transport>hwbinder</transport>
         <impl level="generic"></impl>
-        <version>2.1</version>
+        <version>3.0</version>
         <interface>
             <name>IRTPService</name>
             <instance>imsrtpservice</instance>
