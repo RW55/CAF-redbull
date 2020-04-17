@@ -40,6 +40,10 @@ PRODUCT_SOONG_NAMESPACES += \
     vendor/qcom/sm7250 \
     vendor/google/interfaces
 
+# Include sensors soong namespace
+PRODUCT_SOONG_NAMESPACES += \
+    vendor/qcom/sensors
+
 # Single vendor RIL/Telephony/data with SM7250
   PRODUCT_SOONG_NAMESPACES += \
       vendor/qcom/sm7250/codeaurora/commonsys/telephony/ims/ims-ext-common \
@@ -343,7 +347,7 @@ PRODUCT_PACKAGES += \
 # Light HAL
 PRODUCT_PACKAGES += \
     lights.lito \
-    hardware.google.light@1.0-service
+    hardware.google.light@1.1-service
 
 # Memtrack HAL
 PRODUCT_PACKAGES += \
