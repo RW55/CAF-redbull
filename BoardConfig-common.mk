@@ -226,7 +226,9 @@ BOARD_SUPER_PARTITION_ERROR_LIMIT := 9231663104
 
 BUILD_BROKEN_USES_BUILD_COPY_HEADERS := true
 
-# List of modules that should not load automatically
-PRODUCT_COPY_FILES += \
-    device/google/redbull/modules.blocklist:$(TARGET_COPY_OUT_VENDOR)/lib/modules/modules.blocklist \
-    device/google/redbull/init.insmod.charger.cfg:$(TARGET_COPY_OUT_VENDOR)/etc/init.insmod.charger.cfg
+#For sensor
+SOONG_CONFIG_NAMESPACES += sensor
+SOONG_CONFIG_sensor += \
+	enable_sensor_ssc_for_soong
+
+SOONG_CONFIG_sensor_enable_sensor_ssc_for_soong := $(ENABLE_SENSOR_SSC_FOR_SOONG)
