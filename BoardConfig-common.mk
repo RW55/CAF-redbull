@@ -106,6 +106,9 @@ BOARD_BOOTIMAGE_PARTITION_SIZE := 0x06000000
 # vendor_boot.img
 BOARD_VENDOR_BOOTIMAGE_PARTITION_SIZE := 0x06000000
 
+# Allow LZ4 compression
+BOARD_RAMDISK_USE_LZ4 := true
+
 # Specify BOOT_KERNEL_MODULES
 #
 # modules for first stage in vendor_boot.img, remainder goes to vendor.img.
@@ -499,8 +502,6 @@ else ifeq (,$(filter-out $(TARGET_BOOTLOADER_BOARD_NAME)_kernel_debug_hang, $(TA
     KERNEL_MODULE_DIR := $(TARGET_KERNEL_DIR)/debug_hang
 else ifeq (,$(filter-out $(TARGET_BOOTLOADER_BOARD_NAME)_kernel_debug_api, $(TARGET_PRODUCT)))
     KERNEL_MODULE_DIR := $(TARGET_KERNEL_DIR)/debug_api
-else ifeq (,$(filter-out $(TARGET_BOOTLOADER_BOARD_NAME)_gki, $(TARGET_PRODUCT)))
-    KERNEL_MODULE_DIR := $(TARGET_KERNEL_DIR)/gki
 else
     ifneq (,$(filter userdebug eng, $(TARGET_BUILD_VARIANT)))
         KERNEL_MODULE_DIR := $(TARGET_KERNEL_DIR)

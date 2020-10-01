@@ -289,13 +289,11 @@ PRODUCT_PROPERTY_OVERRIDES += \
     ro.opengles.version=196610
 
 PRODUCT_PROPERTY_OVERRIDES += \
-    ro.vendor.display.foss=1 \
     ro.vendor.display.paneltype=2 \
-    ro.vendor.display.sensortype=2 \
-    vendor.display.foss.config=1 \
-    vendor.display.foss.config_path=/vendor/etc/FOSSConfig.xml \
+    ro.vendor.display.sensortype=1 \
     vendor.display.enable_async_powermode=0 \
-    vendor.display.qdcm.mode_combine=1
+    vendor.display.qdcm.mode_combine=1 \
+    vendor.display.lbe.supported=1
 
 # vndservicemanager has been removed from API30 devices (aosp/1235751)
 # but we still need it for display services.
@@ -309,6 +307,10 @@ PRODUCT_PROPERTY_OVERRIDES += \
 # camera hal buffer management
 PRODUCT_PROPERTY_OVERRIDES += \
     persist.camera.managebuffer.enable=1
+
+# camera enable RT thread
+PRODUCT_PROPERTY_OVERRIDES += \
+    persist.camera.realtimethread=1
 
 # Lets the vendor library that Google Camera HWL is enabled
 PRODUCT_PROPERTY_OVERRIDES += \
@@ -333,6 +335,7 @@ PRODUCT_PROPERTY_OVERRIDES += \
     persist.vendor.radio.custom_ecc=1 \
     persist.vendor.radio.data_ltd_sys_ind=1 \
     persist.vendor.radio.videopause.mode=1 \
+    persist.vendor.radio.mt_sms_ack=30 \
     persist.vendor.radio.multisim_switch_support=true \
     persist.vendor.radio.sib16_support=1 \
     persist.vendor.radio.data_con_rprt=true \
@@ -364,8 +367,7 @@ PRODUCT_PACKAGES += \
 
 # Light HAL
 PRODUCT_PACKAGES += \
-    lights.lito \
-    hardware.google.light@1.1-service
+    lights.lito
 
 # Memtrack HAL
 PRODUCT_PACKAGES += \
@@ -404,8 +406,6 @@ PRODUCT_PROPERTY_OVERRIDES += \
 
 # DRM HAL
 PRODUCT_PACKAGES += \
-    android.hardware.drm@1.0-impl \
-    android.hardware.drm@1.0-service \
     android.hardware.drm@1.3-service.clearkey \
     android.hardware.drm@1.3-service.widevine
 
@@ -625,6 +625,7 @@ PRODUCT_COPY_FILES += \
     $(LOCAL_PATH)/media_codecs_c2.xml:$(TARGET_COPY_OUT_VENDOR)/etc/media_codecs_c2.xml \
     $(LOCAL_PATH)/media_codecs_performance_c2.xml:$(TARGET_COPY_OUT_VENDOR)/etc/media_codecs_performance_c2.xml \
     $(LOCAL_PATH)/media_codecs_omx.xml:$(TARGET_COPY_OUT_VENDOR)/etc/media_codecs_omx.xml \
+    $(LOCAL_PATH)/video_system_specs.json:$(TARGET_COPY_OUT_VENDOR)/etc/video_system_specs.json \
     frameworks/av/media/libstagefright/data/media_codecs_google_audio.xml:$(TARGET_COPY_OUT_VENDOR)/etc/media_codecs_google_audio.xml \
     frameworks/av/media/libstagefright/data/media_codecs_google_telephony.xml:$(TARGET_COPY_OUT_VENDOR)/etc/media_codecs_google_telephony.xml \
     frameworks/av/media/libstagefright/data/media_codecs_google_video.xml:$(TARGET_COPY_OUT_VENDOR)/etc/media_codecs_google_video.xml \
@@ -646,7 +647,7 @@ endif
 
 # Subsystem silent restart
 PRODUCT_PROPERTY_OVERRIDES += \
-    persist.vendor.sys.ssr.restart_level=modem,slpi
+    persist.vendor.sys.ssr.restart_level=modem,adsp,slpi
 
 ifneq (,$(filter userdebug eng, $(TARGET_BUILD_VARIANT)))
 # Sensor debug flag
@@ -782,8 +783,8 @@ endif
 PRODUCT_DEFAULT_PROPERTY_OVERRIDES += debug.sf.use_phase_offsets_as_durations=1
 PRODUCT_DEFAULT_PROPERTY_OVERRIDES += debug.sf.late.sf.duration=10500000
 PRODUCT_DEFAULT_PROPERTY_OVERRIDES += debug.sf.late.app.duration=20500000
-PRODUCT_DEFAULT_PROPERTY_OVERRIDES += debug.sf.early.sf.duration=21000000
-PRODUCT_DEFAULT_PROPERTY_OVERRIDES += debug.sf.early.app.duration=21000000
+PRODUCT_DEFAULT_PROPERTY_OVERRIDES += debug.sf.early.sf.duration=16000000
+PRODUCT_DEFAULT_PROPERTY_OVERRIDES += debug.sf.early.app.duration=16500000
 PRODUCT_DEFAULT_PROPERTY_OVERRIDES += debug.sf.earlyGl.sf.duration=13500000
 PRODUCT_DEFAULT_PROPERTY_OVERRIDES += debug.sf.earlyGl.app.duration=21000000
 
@@ -804,9 +805,9 @@ PRODUCT_COPY_FILES += \
 PRODUCT_COPY_FILES += \
     $(LOCAL_PATH)/gps.conf:$(TARGET_COPY_OUT_VENDOR)/etc/gps.conf
 
-# default atrace HAL
+# Pixel atrace HAL
 PRODUCT_PACKAGES += \
-    android.hardware.atrace@1.0-service
+    android.hardware.atrace@1.0-service.pixel
 
 # dynamic partition
 PRODUCT_USE_DYNAMIC_PARTITIONS := true
@@ -839,12 +840,6 @@ PRODUCT_PACKAGES += $(HIDL_WRAPPER)
 PRODUCT_PROPERTY_OVERRIDES += \
 	ro.vendor.build.svn=1
 
-# ZRAM writeback
-PRODUCT_PROPERTY_OVERRIDES += \
-    ro.zram.mark_idle_delay_mins=60 \
-    ro.zram.first_wb_delay_mins=180 \
-    ro.zram.periodic_wb_delay_hours=24
-
 # Enable iwlan service logging for debug
 ifneq (,$(filter userdebug eng, $(TARGET_BUILD_VARIANT)))
     PRODUCT_PROPERTY_OVERRIDES += persist.vendor.iwlan.logging.logcat=true
@@ -852,6 +847,9 @@ endif
 
 PRODUCT_COPY_FILES += \
     $(LOCAL_PATH)/powerhint.json:$(TARGET_COPY_OUT_VENDOR)/etc/powerhint.json
+
+PRODUCT_COPY_FILES += \
+    $(LOCAL_PATH)/task_profiles.json:$(TARGET_COPY_OUT_VENDOR)/etc/task_profiles.json
 
 # Set Vendor SPL to match platform
 VENDOR_SECURITY_PATCH = $(PLATFORM_SECURITY_PATCH)
@@ -960,7 +958,7 @@ PRODUCT_PRODUCT_PROPERTIES += \
 endif
 
 # Enable Incremental on the device via kernel module
-PRODUCT_PRODUCT_PROPERTIES += \
+PRODUCT_PROPERTY_OVERRIDES += \
         ro.incremental.enable=module:/vendor/lib/modules/incrementalfs.ko
 
 $(call inherit-product, $(SRC_TARGET_DIR)/product/virtual_ab_ota.mk)
