@@ -35,8 +35,20 @@ on early-init
     mount debugfs debugfs /sys/kernel/debug
     chmod 0755 /sys/kernel/debug
 
-    # Disable EAS
-    write /sys/kernel/debug/sched_features NO_ENERGY_AWARE
+    # configure governor settings
+    write /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor schedutil
+    write /sys/devices/system/cpu/cpu0/cpufreq/schedutil/up_rate_limit_us 500
+    write /sys/devices/system/cpu/cpu0/cpufreq/schedutil/down_rate_limit_us 20000
+
+    # configure governor settings for big cluster
+    write /sys/devices/system/cpu/cpu6/cpufreq/scaling_governor schedutil
+    write /sys/devices/system/cpu/cpu6/cpufreq/schedutil/up_rate_limit_us 500
+    write /sys/devices/system/cpu/cpu6/cpufreq/schedutil/down_rate_limit_us 20000
+
+    # configure governor settings for big big CPU
+    write /sys/devices/system/cpu/cpu7/cpufreq/scaling_governor schedutil
+    write /sys/devices/system/cpu/cpu7/cpufreq/schedutil/up_rate_limit_us 500
+    write /sys/devices/system/cpu/cpu7/cpufreq/schedutil/down_rate_limit_us 20000
 
 # Disable VDSO on JAWS boards.
 on early-init && property:ro.revision="DEV1.0"
@@ -49,6 +61,22 @@ on early-init && property:ro.boot.mode=charger
     start charger_insmod_sh
 
 on init && property:vendor.skip.init=0
+    # Boot time cpuset and stune
+    write /dev/cpuset/top-app/cpus 0-7
+    write /dev/cpuset/foreground/cpus 0-7
+    write /dev/cpuset/background/cpus 0-5
+    write /dev/cpuset/system-background/cpus 0-5
+    write /dev/cpuset/restricted/cpus 2-5
+    write /dev/stune/foreground/schedtune.prefer_idle 1
+    write /dev/stune/foreground/schedtune.prefer_high_cap 1
+    write /dev/stune/foreground/schedtune.boost 100
+    write /dev/stune/schedtune.prefer_idle 1
+    write /dev/stune/schedtune.prefer_high_cap 1
+    write /dev/stune/schedtune.boost 100
+    write /dev/stune/top-app/schedtune.prefer_idle 1
+    write /dev/stune/top-app/schedtune.prefer_high_cap 1
+    write /dev/stune/top-app/schedtune.boost 100
+
     # Boot time fs tuning
     write /sys/block/sda/queue/iostats 0
     write /sys/block/sda/queue/scheduler cfq
@@ -67,7 +95,6 @@ on init && property:vendor.skip.init=0
 
     # Disable UFS powersaving
     write /sys/devices/platform/soc/${ro.boot.bootdevice}/clkgate_enable 0
-    write /sys/devices/platform/soc/${ro.boot.bootdevice}/hibern8_on_idle_enable 0
 
     # Disable powersaving
     write /sys/module/lpm_levels/parameters/sleep_disabled 1
@@ -96,21 +123,6 @@ on init && property:vendor.skip.init=0
     write /sys/devices/system/cpu/cpu6/online 1
     write /sys/devices/system/cpu/cpu7/online 1
 
-    # configure governor settings for little cluster
-    write /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor schedutil
-    write /sys/devices/system/cpu/cpu0/cpufreq/schedutil/up_rate_limit_us 500
-    write /sys/devices/system/cpu/cpu0/cpufreq/schedutil/down_rate_limit_us 20000
-
-    # configure governor settings for big cluster
-    write /sys/devices/system/cpu/cpu6/cpufreq/scaling_governor schedutil
-    write /sys/devices/system/cpu/cpu6/cpufreq/schedutil/up_rate_limit_us 500
-    write /sys/devices/system/cpu/cpu6/cpufreq/schedutil/down_rate_limit_us 20000
-
-    # configure governor settings for big big CPU
-    write /sys/devices/system/cpu/cpu7/cpufreq/scaling_governor schedutil
-    write /sys/devices/system/cpu/cpu7/cpufreq/schedutil/up_rate_limit_us 500
-    write /sys/devices/system/cpu/cpu7/cpufreq/schedutil/down_rate_limit_us 20000
-
     # ZRAM setup
     write /sys/block/zram0/comp_algorithm lz4
     write /proc/sys/vm/page-cluster 0
@@ -118,17 +130,19 @@ on init && property:vendor.skip.init=0
     # Some user code relies on ro.boot.hardware.revision
     setprop ro.boot.hardware.revision ${ro.revision}
 
-    # set default schedTune value for foreground/top-app
-    write /dev/stune/foreground/schedtune.prefer_idle 1
-    write /dev/stune/top-app/schedtune.boost 10
-    write /dev/stune/top-app/schedtune.prefer_idle 1
-
     mkdir /dev/cpuset/camera-daemon
     write /dev/cpuset/camera-daemon/cpus 0-7
     write /dev/cpuset/camera-daemon/mems 0
     chown system system /dev/cpuset/camera-daemon
     chown system system /dev/cpuset/camera-daemon/tasks
     chmod 0664 /dev/cpuset/camera-daemon/tasks
+
+    mkdir /dev/cpuset/camera-daemon-dedicated
+    write /dev/cpuset/camera-daemon-dedicated/cpus 0-7
+    write /dev/cpuset/camera-daemon-dedicated/mems 0
+    chown system system /dev/cpuset/camera-daemon-dedicated
+    chown system system /dev/cpuset/camera-daemon-dedicated/tasks
+    chmod 0664 /dev/cpuset/camera-daemon-dedicated/tasks
 
     # create an stune group for camera-specific processes
     mkdir /dev/stune/camera-daemon
@@ -149,9 +163,18 @@ on init && property:vendor.skip.init=0
     chown system system /sys/devices/platform/soc/soc:google,charger/charge_stop_level
     chown system system /sys/devices/platform/soc/soc:google,charger/charge_start_level
 
+    # report max frequency to unity tasks.
+    write /proc/sys/kernel/sched_lib_name "UnityMain,libunity.so"
+    write /proc/sys/kernel/sched_lib_mask_force 255
+
+    # Charge stats (write 0)
+    chown system system /sys/class/power_supply/battery/charge_stats
+
 on late-init
     chown system system /sys/devices/virtual/thermal/tz-by-name/skin-therm-monitor/trip_point_0_temp
     chown system system /sys/devices/virtual/thermal/tz-by-name/skin-therm-monitor/trip_point_0_hyst
+    chown system system /sys/devices/virtual/thermal/tz-by-name/cellular-emergency/trip_point_0_temp
+    chown system system /sys/devices/virtual/thermal/tz-by-name/cellular-emergency/trip_point_0_hyst
     chown system system /sys/devices/virtual/thermal/tz-by-name/usbc-therm-monitor/trip_point_0_temp
     chown system system /sys/devices/virtual/thermal/tz-by-name/usbc-therm-monitor/trip_point_0_hyst
     chown system system /sys/devices/virtual/thermal/tz-by-name/soc/mode
@@ -196,6 +219,10 @@ on fs
 
     restorecon_recursive /mnt/vendor/persist
 
+    # Set up camera-related directories and permissions
+    # Add restorecon_recursive command to make sure the restorecon label is persist_camera_file.
+    restorecon_recursive /mnt/vendor/persist/camera
+
 on post-fs
     # set RLIMIT_MEMLOCK to 64MB
     setrlimit 8 67108864 67108864
@@ -220,9 +247,7 @@ on late-fs
     start surfaceflinger
     start bootanim
     start vendor.qti.hardware.display.composer
-    start vendor.configstore-hal
     start vendor.qti.hardware.display.allocator
-    start vendor.light-1-1
 
     # Wait for keymaster HALs (TEE and StrongBox)
     exec_start wait_for_strongbox
@@ -252,14 +277,17 @@ on late-fs
     chown system system /mnt/vendor/persist/time/ats_15
     chown system system /mnt/vendor/persist/time/ats_16
 
-    # Start time daemon early so that the system time can be set early
-    start time_daemon
-
     # Init sensor specific services
     start init-sensors-sh
 
+    # Start the twoshay touch service
+    start twoshay
+
     # turn off vblank irq immediately after turning off
     write /sys/module/drm/parameters/vblankoffdelay -1
+
+    # Write build info to kdebuginfo.
+    write /sys/module/kdebuginfo/parameters/build_info "${ro.product.name}-${ro.build.type} ${ro.build.version.incremental}"
 
 on post-fs-data
     mkdir /vendor/data/tombstones 0771 system system
@@ -320,6 +348,10 @@ on zygote-start
     mkdir /dev/socket/location/mq 0770 gps gps
     mkdir /dev/socket/location/xtra 0770 gps gps
 
+    #Create directories for wifihal services
+    mkdir /dev/socket/wifihal 0770 wifi wifi
+    chmod 2770 /dev/socket/wifihal
+
 on early-boot
     # Change owner for sensors-related directories
     chown root system /mnt/vendor/persist/sensors/registry
@@ -337,6 +369,10 @@ on early-boot
     chown system system /mnt/vendor/persist/sensors/registry/factory_data
     chown system system /mnt/vendor/persist/sensors/registry/factory_data/sns_fac_registry
     restorecon_recursive /mnt/vendor/persist/sensors/registry/factory_data
+
+    # Restore SeLinux Context for preventing temp.json with
+    # incorrect security context
+    restorecon /mnt/vendor/persist/sensors/registry/temp.json
 
     chmod 770 /mnt/vendor/persist/audio
     chmod 660 /mnt/vendor/persist/audio/audio.cal
@@ -364,6 +400,7 @@ on early-boot
     chown system system /sys/class/backlight/panel0-backlight/vr_mode
     chown system system /sys/class/backlight/panel0-backlight/hbm_mode
     chown system system /sys/class/backlight/panel0-backlight/als_table
+    chown system system /sys/devices/platform/soc/soc:qcom,dsi-display-primary/te2_table
 
     # Wait for insmod_sh to finish all modules
     wait_for_prop vendor.all.modules.ready 1
@@ -400,12 +437,14 @@ on early-boot
     chown system system /mnt/vendor/persist/camera/rals_fac_test
     chmod 0660 /mnt/vendor/persist/camera/rals_fac_test
 
-    # Permission for Athletico
-    chown system system /dev/sensor_tunnel
-    chmod 0660 /dev/sensor_tunnel
-
     # FG cycle count read from dumpstate + backup restore from health HAL (and pixelstats)
     chown system system /sys/class/power_supply/maxfg/cycle_counts_bins
+
+    # Permission for battery eeprom
+    chown system system /sys/devices/platform/soc/98c000.i2c/i2c-1/1-0050/1-00500/nvmem
+    chmod 0640 /sys/devices/platform/soc/98c000.i2c/i2c-1/1-0050/1-00500/nvmem
+    chown system system /dev/battery_history
+    chmod 0644 /dev/battery_history
 
     # Permission for Pixelstats
     chown system system /sys/class/misc/msm_cirrus_playback/resistance_left_right
@@ -428,6 +467,7 @@ on boot
     chmod 2770 /dev/socket/qmux_radio
 
     setprop wifi.interface wlan0
+    setprop wifi.aware.interface wifi-aware0
 
     chown system system /sys/kernel/hbtp/display_pwr
 
@@ -500,10 +540,21 @@ on property:sys.boot_completed=1
 
     # Setup runtime cpusets
     write /dev/cpuset/top-app/cpus 0-7
-    write /dev/cpuset/foreground/cpus 0-6
+    write /dev/cpuset/foreground/cpus 0-5,7
     write /dev/cpuset/background/cpus 4-5
     write /dev/cpuset/system-background/cpus 2-5
     write /dev/cpuset/restricted/cpus 2-5
+
+    # Setup runtime schedTune
+    write /dev/stune/foreground/schedtune.prefer_idle 1
+    write /dev/stune/foreground/schedtune.prefer_high_cap 0
+    write /dev/stune/foreground/schedtune.boost 0
+    write /dev/stune/schedtune.prefer_idle 0
+    write /dev/stune/schedtune.prefer_high_cap 0
+    write /dev/stune/schedtune.boost 0
+    write /dev/stune/top-app/schedtune.prefer_idle 1
+    write /dev/stune/top-app/schedtune.prefer_high_cap 0
+    write /dev/stune/top-app/schedtune.boost 10
 
     # Setup runtime blkio
     # value for group_idle is us
@@ -534,16 +585,24 @@ on property:sys.boot_completed=1
     chown system system /sys/devices/platform/soc/98c000.i2c/i2c-1/1-003b/rtx
     chmod 0660 /sys/devices/platform/soc/98c000.i2c/i2c-1/1-003b/rtx
 
-    # Permission for Athletico
-    chown system system /dev/iaxxx-module-celldrv
-    chmod 0660 /dev/iaxxx-module-celldrv
+    chown system system /sys/devices/platform/soc/98c000.i2c/i2c-1/1-003b/rxdata
+    chown system system /sys/devices/platform/soc/98c000.i2c/i2c-1/1-003b/txdata
+    chown system system /sys/devices/platform/soc/98c000.i2c/i2c-1/1-003b/rxlen
+    chown system system /sys/devices/platform/soc/98c000.i2c/i2c-1/1-003b/txlen
+    chown system system /sys/devices/platform/soc/98c000.i2c/i2c-1/1-003b/ccreset
+    chown system system /sys/devices/platform/soc/98c000.i2c/i2c-1/1-003b/status
+    chown system system /sys/devices/platform/soc/98c000.i2c/i2c-1/1-003b/version
 
     # Permission for bootloader logs
     chown root log /proc/bldrlog
     chmod 0444 /proc/bldrlog
 
+on property:persist.vendor.hvdcp_opti.start=1
+    chown root system /sys/class/power_supply/bms/soh
+    chown root system /sys/class/power_supply/bms/esr_actual
+    chown root system /sys/class/power_supply/bms/esr_nominal
+
 service vendor.per_mgr /vendor/bin/pm-service
-    class core
     user system
     group system
     ioprio rt 4
@@ -557,6 +616,17 @@ service per_proxy /vendor/bin/pm-proxy
 on property:init.svc.vendor.per_mgr=running
     start per_proxy
 
+# Start per_mgr daemon to boot modem as esim reset is done or not needed
+on property:persist.vendor.modem.esim.reset=done
+    start vendor.per_mgr
+
+on property:persist.vendor.modem.esim.reset=noneed
+    start vendor.per_mgr
+
+# Force to start per_mgr daemon as boot completed
+on property:sys.boot_completed=1
+    start vendor.per_mgr
+
 on property:sys.shutdown.requested=*
     stop per_proxy
 
@@ -564,15 +634,6 @@ service vendor.qseecomd /vendor/bin/qseecomd
     class core
     user root
     group root
-
-service vendor.thermal-engine /vendor/bin/thermal-engine -c /vendor/etc/thermal-engine-${ro.hardware}.conf
-   class main
-   user root
-   socket thermal-send-client stream 0666 system system
-   socket thermal-recv-client stream 0660 system system
-   socket thermal-recv-passive-client stream 0666 system system
-   socket thermal-send-rule stream 0660 system system
-   group root
 
 service init-sensors-sh /vendor/bin/init.sensors.sh
     class main
@@ -622,11 +683,6 @@ service vendor.ims_rtp_daemon /system/vendor/bin/ims_rtp_daemon
    user radio
    group radio inet log
 
-service cnd /vendor/bin/cnd
-   class main
-   user system
-   group system wifi inet radio wakelock net_admin
-
 service wait_for_strongbox /vendor/bin/hw/wait_for_strongbox
     user root
     group root system
@@ -646,11 +702,6 @@ service irsc_util /vendor/bin/irsc_util "/vendor/etc/sec_config"
    class core
    user root
    oneshot
-
-service tftp_server /vendor/bin/tftp_server
-   class core
-   user root
-   group root system
 
 service modem_svc /vendor/bin/modem_svc -q
    class core
@@ -687,6 +738,18 @@ on property:init.svc.vendor.qti.hardware.display.composer=stopped
 
 on property:init.svc.vendor.qti.hardware.display.composer=running
     start ppd
+
+# Start daemon after boot completed
+on property:sys.boot_completed=1
+    start vendor.ssgtzd
+
+# Used 'disabled' flag, so daemon won't be started until explicit start
+service vendor.ssgtzd /vendor/bin/ssgtzd
+    class late_start
+    user system
+    group system
+    disabled
+    socket ssgtzd stream 0660 system inet
 
 # charger driver exposes now finer grain control, map demo mode to those properties
 # NOTE: demo mode can only be exit wiping data (which reset the persist properties)
@@ -731,6 +794,15 @@ service loc_launcher /vendor/bin/loc_launcher
     user gps
     group gps
 
+# Allow access to touch
+on property:vendor.all.modules.ready=1
+    chown system input /dev/touch_offload
+    chmod 660 /dev/touch_offload
+
+# Conditionally enable the twoshay touch service
+on property:persist.vendor.enable_twoshay=1
+    enable twoshay
+
 # bugreport is triggered by holding down volume down, volume up and power
 service bugreport /system/bin/dumpstate -d -p -z
     class main
@@ -763,3 +835,10 @@ on property:persist.radio.multisim.config=
 # it should be written by the system init.
 on property:ro.boot.hardware.radio.subtype=1
     setprop audio.camerasound.force true
+# BUG FIX: b/163674593
+on property:ro.boot.hardware.sku=G5NZ6
+    setprop audio.camerasound.force true
+
+on property:persist.sys.device_provisioned=1
+    setprop dalvik.vm.dex2oat-cpu-set 0,1,2,3,4,5,7
+    setprop dalvik.vm.dex2oat-threads 6

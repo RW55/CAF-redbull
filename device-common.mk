@@ -37,6 +37,12 @@ PRODUCT_SOONG_NAMESPACES += \
     vendor/qcom/sm7250 \
     vendor/google/interfaces
 
+# Include GPS soong namespace
+PRODUCT_SOONG_NAMESPACES += \
+    hardware/qcom/sm7250/gps \
+    vendor/qcom/sm7250/proprietary/gps \
+    vendor/qcom/sm7250/codeaurora/location
+
 # Include sensors soong namespace
 PRODUCT_SOONG_NAMESPACES += \
     vendor/qcom/sensors \
@@ -51,7 +57,8 @@ PRODUCT_SOONG_NAMESPACES += \
       vendor/qcom/sm7250/proprietary/commonsys/telephony-apps/QtiTelephonyService \
       vendor/qcom/sm7250/proprietary/commonsys/telephony-apps/xdivert \
       vendor/qcom/sm7250/proprietary/qcril-data-hal \
-      vendor/qcom/sm7250/proprietary/qcril-hal
+      vendor/qcom/sm7250/proprietary/qcril-hal \
+      vendor/qcom/sm7250/proprietary/data
 
 PRODUCT_PROPERTY_OVERRIDES += \
     keyguard.no_require_sim=true
@@ -87,7 +94,7 @@ $(call inherit-product, $(LOCAL_PATH)/utils.mk)
 $(call inherit-product, $(SRC_TARGET_DIR)/product/developer_gsi_keys.mk)
 
 PRODUCT_CHARACTERISTICS := nosdcard
-PRODUCT_SHIPPING_API_LEVEL := 28
+PRODUCT_SHIPPING_API_LEVEL := 30
 
 DEVICE_PACKAGE_OVERLAYS += $(LOCAL_PATH)/overlay
 
@@ -158,6 +165,9 @@ PRODUCT_PACKAGES += \
     f2fs_io \
     check_f2fs
 
+PRODUCT_PROPERTY_OVERRIDES += \
+    ro.crypto.volume.filenames_mode=aes-256-cts
+
 AB_OTA_POSTINSTALL_CONFIG += \
     RUN_POSTINSTALL_vendor=true \
     POSTINSTALL_PATH_vendor=bin/checkpoint_gc \
@@ -182,6 +192,7 @@ PRODUCT_PACKAGES_DEBUG += \
     update_engine_client
 
 PRODUCT_COPY_FILES += \
+    frameworks/native/data/etc/android.hardware.camera.concurrent.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.camera.concurrent.xml \
     frameworks/native/data/etc/android.hardware.camera.flash-autofocus.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.camera.flash-autofocus.xml \
     frameworks/native/data/etc/android.hardware.camera.front.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.camera.front.xml \
     frameworks/native/data/etc/android.hardware.camera.full.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.camera.full.xml\
@@ -247,6 +258,7 @@ PRODUCT_PROPERTY_OVERRIDES += \
     vendor.audio.capture.enforce_legacy_copp_sr=true \
     vendor.audio.offload.buffer.size.kb=256 \
     persist.vendor.audio_hal.dsp_bit_width_enforce_mode=24 \
+    vendor.audio.offload.gapless.enabled=true \
 
 # MaxxAudio effect and add rotation monitor
 PRODUCT_PROPERTY_OVERRIDES += \
@@ -277,13 +289,16 @@ PRODUCT_PROPERTY_OVERRIDES += \
     ro.opengles.version=196610
 
 PRODUCT_PROPERTY_OVERRIDES += \
-    ro.vendor.display.foss=1 \
     ro.vendor.display.paneltype=2 \
-    ro.vendor.display.sensortype=2 \
-    vendor.display.foss.config=1 \
-    vendor.display.foss.config_path=/vendor/etc/FOSSConfig.xml \
+    ro.vendor.display.sensortype=1 \
     vendor.display.enable_async_powermode=0 \
-    vendor.display.qdcm.mode_combine=1
+    vendor.display.qdcm.mode_combine=1 \
+    vendor.display.lbe.supported=1
+
+# vndservicemanager has been removed from API30 devices (aosp/1235751)
+# but we still need it for display services.
+PRODUCT_PACKAGES += \
+    vndservicemanager
 
 # camera google face detection
 PRODUCT_PROPERTY_OVERRIDES += \
@@ -292,6 +307,10 @@ PRODUCT_PROPERTY_OVERRIDES += \
 # camera hal buffer management
 PRODUCT_PROPERTY_OVERRIDES += \
     persist.camera.managebuffer.enable=1
+
+# camera enable RT thread
+PRODUCT_PROPERTY_OVERRIDES += \
+    persist.camera.realtimethread=1
 
 # Lets the vendor library that Google Camera HWL is enabled
 PRODUCT_PROPERTY_OVERRIDES += \
@@ -316,6 +335,7 @@ PRODUCT_PROPERTY_OVERRIDES += \
     persist.vendor.radio.custom_ecc=1 \
     persist.vendor.radio.data_ltd_sys_ind=1 \
     persist.vendor.radio.videopause.mode=1 \
+    persist.vendor.radio.mt_sms_ack=30 \
     persist.vendor.radio.multisim_switch_support=true \
     persist.vendor.radio.sib16_support=1 \
     persist.vendor.radio.data_con_rprt=true \
@@ -347,8 +367,7 @@ PRODUCT_PACKAGES += \
 
 # Light HAL
 PRODUCT_PACKAGES += \
-    lights.lito \
-    hardware.google.light@1.1-service
+    lights.lito
 
 # Memtrack HAL
 PRODUCT_PACKAGES += \
@@ -387,8 +406,6 @@ PRODUCT_PROPERTY_OVERRIDES += \
 
 # DRM HAL
 PRODUCT_PACKAGES += \
-    android.hardware.drm@1.0-impl \
-    android.hardware.drm@1.0-service \
     android.hardware.drm@1.3-service.clearkey \
     android.hardware.drm@1.3-service.widevine
 
@@ -451,6 +468,10 @@ QC2_HAVE_ECO_SERVICE := true
 PRODUCT_PROPERTY_OVERRIDES += \
     vendor.qc2.venc.avgqp.enable=1
 
+# To reach target bitrate in CBR mode for IMS VT Call
+PRODUCT_PROPERTY_OVERRIDES += \
+    persist.vendor.ims.mm_minqp=1
+
 PRODUCT_PACKAGES += \
     android.hardware.camera.provider@2.6-impl-google \
     android.hardware.camera.provider@2.6-service-google \
@@ -485,8 +506,8 @@ PRODUCT_PACKAGES += \
     liblocation_api \
     libbatching \
     libgeofencing \
-    android.hardware.gnss@2.0-impl-qti \
-    android.hardware.gnss@2.0-service-qti
+    android.hardware.gnss@2.1-impl-qti \
+    android.hardware.gnss@2.1-service-qti
 
 ENABLE_VENDOR_RIL_SERVICE := true
 
@@ -537,7 +558,9 @@ PRODUCT_PACKAGES += \
     audio.bluetooth.default
 
 PRODUCT_PACKAGES += \
+    android.hardware.audio@6.0-impl:32 \
     android.hardware.audio@5.0-impl:32 \
+    android.hardware.audio.effect@6.0-impl:32 \
     android.hardware.audio.effect@5.0-impl:32 \
     android.hardware.soundtrigger@2.3-impl \
     android.hardware.bluetooth.audio@2.0-impl \
@@ -551,7 +574,8 @@ PRODUCT_PACKAGES += \
     btaudio_offload_if \
     libthermallistener \
     libmaxxaudio \
-    libaudiozoom
+    libaudiozoom \
+    libdevicestatelistener
 
 ifneq (,$(filter userdebug eng, $(TARGET_BUILD_VARIANT)))
 PRODUCT_PACKAGES += \
@@ -564,8 +588,7 @@ endif
 
 # Audio hal xmls
 PRODUCT_COPY_FILES += \
-    $(LOCAL_PATH)/audio/sound_trigger_platform_info.xml:$(TARGET_COPY_OUT_VENDOR)/etc/sound_trigger_platform_info.xml \
-    $(LOCAL_PATH)/audio/sound_trigger_mixer_paths.xml:$(TARGET_COPY_OUT_VENDOR)/etc/sound_trigger_mixer_paths.xml
+    $(LOCAL_PATH)/audio/sound_trigger_platform_info.xml:$(TARGET_COPY_OUT_VENDOR)/etc/sound_trigger_platform_info.xml
 
 # Cirrus calibration xml
 PRODUCT_COPY_FILES += \
@@ -602,6 +625,7 @@ PRODUCT_COPY_FILES += \
     $(LOCAL_PATH)/media_codecs_c2.xml:$(TARGET_COPY_OUT_VENDOR)/etc/media_codecs_c2.xml \
     $(LOCAL_PATH)/media_codecs_performance_c2.xml:$(TARGET_COPY_OUT_VENDOR)/etc/media_codecs_performance_c2.xml \
     $(LOCAL_PATH)/media_codecs_omx.xml:$(TARGET_COPY_OUT_VENDOR)/etc/media_codecs_omx.xml \
+    $(LOCAL_PATH)/video_system_specs.json:$(TARGET_COPY_OUT_VENDOR)/etc/video_system_specs.json \
     frameworks/av/media/libstagefright/data/media_codecs_google_audio.xml:$(TARGET_COPY_OUT_VENDOR)/etc/media_codecs_google_audio.xml \
     frameworks/av/media/libstagefright/data/media_codecs_google_telephony.xml:$(TARGET_COPY_OUT_VENDOR)/etc/media_codecs_google_telephony.xml \
     frameworks/av/media/libstagefright/data/media_codecs_google_video.xml:$(TARGET_COPY_OUT_VENDOR)/etc/media_codecs_google_video.xml \
@@ -633,7 +657,7 @@ PRODUCT_PROPERTY_OVERRIDES += \
 endif
 
 # setup dalvik vm configs
-$(call inherit-product, frameworks/native/build/phone-xhdpi-6144-dalvik-heap.mk)
+$(call inherit-product, frameworks/native/build/phone-xhdpi-2048-dalvik-heap.mk)
 
 # Use the default charger mode images
 PRODUCT_PACKAGES += \
@@ -674,6 +698,10 @@ PRODUCT_PACKAGES += \
 # Override heap growth limit due to high display density on device
 PRODUCT_PROPERTY_OVERRIDES += \
     dalvik.vm.heapgrowthlimit=256m
+
+# Use 64-bit dex2oat for better dexopt time.
+PRODUCT_PROPERTY_OVERRIDES += \
+    dalvik.vm.dex2oat64.enabled=true
 
 PRODUCT_COPY_FILES += \
     $(LOCAL_PATH)/hidl/android.hidl.base@1.0.so-32:system_ext/lib/android.hidl.base@1.0.so \
@@ -735,6 +763,9 @@ TARGET_LMKD_STATS_LOG := true
 PRODUCT_PRODUCT_PROPERTIES += \
     ro.lmk.log_stats=true
 
+PRODUCT_COPY_FILES += \
+    $(LOCAL_PATH)/init.gadgethal.sh:$(TARGET_COPY_OUT_VENDOR)/bin/init.gadgethal.sh
+
 # default usb oem functions
 ifneq (,$(filter userdebug eng, $(TARGET_BUILD_VARIANT)))
   PRODUCT_PROPERTY_OVERRIDES += \
@@ -753,9 +784,9 @@ PRODUCT_DEFAULT_PROPERTY_OVERRIDES += debug.sf.use_phase_offsets_as_durations=1
 PRODUCT_DEFAULT_PROPERTY_OVERRIDES += debug.sf.late.sf.duration=10500000
 PRODUCT_DEFAULT_PROPERTY_OVERRIDES += debug.sf.late.app.duration=20500000
 PRODUCT_DEFAULT_PROPERTY_OVERRIDES += debug.sf.early.sf.duration=16000000
-PRODUCT_DEFAULT_PROPERTY_OVERRIDES += debug.sf.early.app.duration=33500000
+PRODUCT_DEFAULT_PROPERTY_OVERRIDES += debug.sf.early.app.duration=16500000
 PRODUCT_DEFAULT_PROPERTY_OVERRIDES += debug.sf.earlyGl.sf.duration=13500000
-PRODUCT_DEFAULT_PROPERTY_OVERRIDES += debug.sf.earlyGl.app.duration=38000000
+PRODUCT_DEFAULT_PROPERTY_OVERRIDES += debug.sf.earlyGl.app.duration=21000000
 
 # Do not skip init trigger by default
 PRODUCT_DEFAULT_PROPERTY_OVERRIDES += \
@@ -774,9 +805,9 @@ PRODUCT_COPY_FILES += \
 PRODUCT_COPY_FILES += \
     $(LOCAL_PATH)/gps.conf:$(TARGET_COPY_OUT_VENDOR)/etc/gps.conf
 
-# default atrace HAL
+# Pixel atrace HAL
 PRODUCT_PACKAGES += \
-    android.hardware.atrace@1.0-service
+    android.hardware.atrace@1.0-service.pixel
 
 # dynamic partition
 PRODUCT_USE_DYNAMIC_PARTITIONS := true
@@ -807,13 +838,7 @@ PRODUCT_PACKAGES += $(HIDL_WRAPPER)
 
 # Increment the SVN for any official public releases
 PRODUCT_PROPERTY_OVERRIDES += \
-	ro.vendor.build.svn=1
-
-# ZRAM writeback
-PRODUCT_PROPERTY_OVERRIDES += \
-    ro.zram.mark_idle_delay_mins=60 \
-    ro.zram.first_wb_delay_mins=180 \
-    ro.zram.periodic_wb_delay_hours=24
+	ro.vendor.build.svn=10
 
 # Enable iwlan service logging for debug
 ifneq (,$(filter userdebug eng, $(TARGET_BUILD_VARIANT)))
@@ -822,6 +847,9 @@ endif
 
 PRODUCT_COPY_FILES += \
     $(LOCAL_PATH)/powerhint.json:$(TARGET_COPY_OUT_VENDOR)/etc/powerhint.json
+
+PRODUCT_COPY_FILES += \
+    $(LOCAL_PATH)/task_profiles.json:$(TARGET_COPY_OUT_VENDOR)/etc/task_profiles.json
 
 # Set Vendor SPL to match platform
 VENDOR_SECURITY_PATCH = $(PLATFORM_SECURITY_PATCH)
@@ -865,6 +893,10 @@ persist.bluetooth.a2dp_offload.cap=sbc-aac-aptx-aptxhd-ldac
 # Enable AAC frame ctl for A2DP sinks
 PRODUCT_PROPERTY_OVERRIDES += \
 persist.vendor.bt.aac_frm_ctl.enabled=true
+
+# Enable VBR frame ctl
+PRODUCT_PROPERTY_OVERRIDES += \
+persist.vendor.bt.aac_vbr_frm_ctl.enabled=true
 
 # Set lmkd options
 PRODUCT_PRODUCT_PROPERTIES += \
@@ -925,10 +957,9 @@ PRODUCT_PRODUCT_PROPERTIES += \
     persist.sys.disable_rescue=true
 endif
 
-# Enable blurs, hidden under dev option
-PRODUCT_PRODUCT_PROPERTIES += \
-    ro.surface_flinger.supports_background_blur=1 \
-    persist.sys.sf.disable_blurs=1
+# Enable Incremental on the device via kernel module
+PRODUCT_PROPERTY_OVERRIDES += \
+        ro.incremental.enable=module:/vendor/lib/modules/incrementalfs.ko
 
 $(call inherit-product, $(SRC_TARGET_DIR)/product/virtual_ab_ota.mk)
 
@@ -953,6 +984,9 @@ $(call inherit-product, $(SRC_TARGET_DIR)/product/virtual_ab_ota.mk)
 -include vendor/qcom/sm7250/proprietary/commonsys-intf/data/data_commonsys-intf_vendor_product.mk
 
 # Sensor
+ifneq ($(wildcard vendor/google/tools),)
+    ENABLE_SENSOR_SSC_FOR_SOONG := true
+endif
 -include vendor/qcom/sm7250/proprietary/sensors-see/build_config/sns_vendor_board.mk
 -include vendor/qcom/sm7250/proprietary/sensors-see/build_config/sns_vendor_product.mk
 
@@ -970,4 +1004,7 @@ include hardware/google/pixel/common/pixel-common-device.mk
 
 # power HAL
 -include hardware/google/pixel/power-libperfmgr/aidl/device.mk
+
+# mm_event
+-include hardware/google/pixel/mm/device.mk
 #################################################################################
