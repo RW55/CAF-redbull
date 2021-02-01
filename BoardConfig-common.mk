@@ -15,6 +15,7 @@
 #
 
 include build/make/target/board/BoardConfigMainlineCommon.mk
+include build/make/target/board/BoardConfigPixelCommon.mk
 
 TARGET_BOARD_PLATFORM := lito
 USES_DEVICE_GOOGLE_REDBULL := true
@@ -59,9 +60,9 @@ BOARD_DTBOIMG_PARTITION_SIZE := 16777216
 
 TARGET_NO_KERNEL := false
 BOARD_USES_GENERIC_KERNEL_IMAGE := true
+BOARD_MOVE_GSI_AVB_KEYS_TO_VENDOR_BOOT := true
 ifneq ($(PRODUCT_BUILD_VENDOR_BOOT_IMAGE),false)
 BOARD_MOVE_RECOVERY_RESOURCES_TO_VENDOR_BOOT := true
-BOARD_MOVE_GSI_AVB_KEYS_TO_VENDOR_BOOT := true
 endif
 
 BOARD_USES_METADATA_PARTITION := true
