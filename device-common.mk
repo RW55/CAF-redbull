@@ -100,7 +100,6 @@ DEVICE_PACKAGE_OVERLAYS += $(LOCAL_PATH)/overlay
 
 PRODUCT_COPY_FILES += \
     $(LOCAL_KERNEL):kernel \
-    $(LOCAL_PATH)/fstab.hardware:$(TARGET_COPY_OUT_RECOVERY)/root/first_stage_ramdisk/fstab.$(PRODUCT_PLATFORM) \
     $(LOCAL_PATH)/fstab.hardware:$(TARGET_COPY_OUT_VENDOR_RAMDISK)/first_stage_ramdisk/fstab.$(PRODUCT_PLATFORM) \
     $(LOCAL_PATH)/fstab.hardware:$(TARGET_COPY_OUT_VENDOR)/etc/fstab.$(PRODUCT_PLATFORM) \
     $(LOCAL_PATH)/init.hardware.rc:$(TARGET_COPY_OUT_VENDOR)/etc/init/hw/init.$(PRODUCT_PLATFORM).rc \
@@ -648,7 +647,7 @@ endif
 
 # Subsystem silent restart
 PRODUCT_PROPERTY_OVERRIDES += \
-    persist.vendor.sys.ssr.restart_level=modem,adsp,slpi
+    persist.vendor.sys.ssr.restart_level=modem,adsp
 
 ifneq (,$(filter userdebug eng, $(TARGET_BUILD_VARIANT)))
 # Sensor debug flag
@@ -830,8 +829,10 @@ HIDL_WRAPPER += qti_telephony_hidl_wrapper.xml
 PRODUCT_PACKAGES += $(HIDL_WRAPPER)
 
 # Increment the SVN for any official public releases
+ifeq ($(PRODUCT_DEVICE_SVN_OVERRIDE),)
 PRODUCT_PROPERTY_OVERRIDES += \
-	ro.vendor.build.svn=15
+	ro.vendor.build.svn=23
+endif
 
 # Enable iwlan service logging for debug
 ifneq (,$(filter userdebug eng, $(TARGET_BUILD_VARIANT)))
@@ -1003,4 +1004,7 @@ include hardware/google/pixel/common/pixel-common-device.mk
 
 # mm_event
 -include hardware/google/pixel/mm/device.mk
+
+# Pixel Logger
+include hardware/google/pixel/PixelLogger/PixelLogger.mk
 #################################################################################
