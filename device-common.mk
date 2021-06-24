@@ -22,6 +22,11 @@ LOCAL_PATH := device/google/redbull
 PRODUCT_VENDOR_MOVE_ENABLED := true
 TARGET_BOARD_PLATFORM := lito
 
+# Make redbull source tree readonly
+# RW Allowlist necessary for a C header file created at runtime
+BUILD_BROKEN_SRC_DIR_IS_WRITABLE := false
+BUILD_BROKEN_SRC_DIR_RW_ALLOWLIST := $(abspath vendor/qcom/sm7250/proprietary)
+
 PRODUCT_SOONG_NAMESPACES += \
     hardware/google/av \
     hardware/google/camera \
@@ -512,7 +517,9 @@ PRODUCT_PACKAGES += \
 ENABLE_VENDOR_RIL_SERVICE := true
 
 HOSTAPD := hostapd
+ifneq (,$(filter userdebug eng, $(TARGET_BUILD_VARIANT)))
 HOSTAPD += hostapd_cli
+endif
 PRODUCT_PACKAGES += $(HOSTAPD)
 
 WPA := wpa_supplicant.conf
@@ -831,7 +838,7 @@ PRODUCT_PACKAGES += $(HIDL_WRAPPER)
 # Increment the SVN for any official public releases
 ifeq ($(PRODUCT_DEVICE_SVN_OVERRIDE),)
 PRODUCT_PROPERTY_OVERRIDES += \
-	ro.vendor.build.svn=23
+	ro.vendor.build.svn=27
 endif
 
 # Enable iwlan service logging for debug
