@@ -833,7 +833,7 @@ PRODUCT_PACKAGES += $(HIDL_WRAPPER)
 # Increment the SVN for any official public releases
 ifeq ($(PRODUCT_DEVICE_SVN_OVERRIDE),)
 PRODUCT_PROPERTY_OVERRIDES += \
-	ro.vendor.build.svn=27
+	ro.vendor.build.svn=28
 endif
 
 # Enable iwlan service logging for debug
@@ -1009,4 +1009,7 @@ include hardware/google/pixel/common/pixel-common-device.mk
 
 # Pixel Logger
 include hardware/google/pixel/PixelLogger/PixelLogger.mk
+
+# Citadel
+include hardware/google/pixel/citadel/citadel.mk
 #################################################################################
